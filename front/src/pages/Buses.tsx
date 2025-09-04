@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-interface Paiement {
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+
+interface Bus {
   id: string;
-  reservationId: string;
-  montant: number;
-  datePaiement: string;
-  statut: string;
+  marque: string;
+  matricule: string;
+  nombreDePlaces: number;
 }
 
-export default function Paiements() {
-  const [paiements, setPaiements] = useState<Paiement[]>([]);
+export default function Buses() {
+  const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // get authenticated user
   const { user } = useAuth();
@@ -26,11 +28,11 @@ export default function Paiements() {
   };
 
   useEffect(() => {
-    async function fetchPaiements() {
+    async function fetchBuses() {
       setLoading(true);
       try {
-        const res = await api.get('/admin/paiements', config);
-        setPaiements(res.data);
+        const res = await api.get('/admin/bus', config);
+        setBuses(res.data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -38,33 +40,32 @@ export default function Paiements() {
       }
     }
 
-    fetchPaiements();
+    fetchBuses();
   }, []);
 
   const exportCSV = () => {
-    const csvRows = paiements.map(item => `${item.id},${item.reservationId},${item.montant},${item.datePaiement},${item.statut}`).join("\n");
+    const csvRows = buses.map(item => `${item.id},${item.marque},${item.matricule},${item.nombreDePlaces}`).join("\n");
     const blob = new Blob([csvRows], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('href', url);
-    a.setAttribute('download', 'export_paiements.csv');
+    a.setAttribute('download', 'export_buses.csv');
     a.click();
   };
 
   // Export en Excel
   const exportExcel = () => {
     // Exclure certains champs, par exemple exclure "email"
-    const filteredForExcel = paiements.map(({ id, reservationId, montant, datePaiement, statut}) => ({
+    const filteredForExcel = buses.map(({ id, marque, matricule, nombreDePlaces}) => ({
       id,
-      reservationId,
-      montant,
-      datePaiement: new Date(datePaiement).toLocaleDateString(), // Formater la date
-      statut
+      marque,
+      matricule,
+      nombreDePlaces
     }));
     const ws = XLSX.utils.json_to_sheet(filteredForExcel); // Crée la feuille avec les champs filtrés
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Export");
-    XLSX.writeFile(wb, "export_paiements.xlsx");
+    XLSX.writeFile(wb, "export_buses.xlsx");
   };
 
   // Export en PDF
@@ -73,22 +74,22 @@ export default function Paiements() {
 
     // Ajouter un titre en dessous du logo
     doc.setFontSize(16);
-    doc.text("Liste des paiements", 60, 25); // Position du titre
+    doc.text("Liste des bus", 60, 25); // Position du titre
 
     // Ajouter un tableau avec autoTable
     autoTable(doc, {
       startY: 50, // Commencer le tableau sous l'entête
-      head: [['ID','Reservation ID','Montant', 'Date Paiement', 'Statut']], // En-tête du tableau
-      body: paiements.map((item) => [item.id, item.reservationId, item.montant, item.datePaiement, item.statut]), // Corps du tableau
+      head: [['ID','Marque','Matricule','Nombre de places']], // En-tête du tableau
+      body: buses.map((item) => [item.id, item.marque, item.matricule, item.nombreDePlaces]), // Corps du tableau
     });
 
     // Exporter le PDF
-    doc.save("export_paiements.pdf");
+    doc.save("export_buses.pdf");
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Paiements</h1>
+      <h1 className="text-2xl font-bold mb-6">Bus</h1>
       {loading ? (
         <p>Chargement...</p>
       ) : (
@@ -96,6 +97,9 @@ export default function Paiements() {
           <div className="inset-0 flex items-center justify-center" style={{ marginBottom: '20px' }}>
             <div className="p-6 rounded-lg shadow-lg">
               <div className="flex justify-between mt-4">
+                <button onClick={() => navigate('/bus/ajouter')} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
+                  Ajouter +
+                </button>
                 <button onClick={exportCSV} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
                   Exporter CSV
                 </button>
@@ -107,31 +111,28 @@ export default function Paiements() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>                    
           <table className="min-w-full bg-white rounded shadow">
             <thead className="bg-gray-200">
               <tr>
                 <th className="py-2 px-4 text-left">ID</th>
-                <th className="py-2 px-4 text-left">Réservation ID</th>
-                <th className="py-2 px-4 text-left">Montant</th>
-                <th className="py-2 px-4 text-left">Date</th>
-                <th className="py-2 px-4 text-left">Statut</th>
+                <th className="py-2 px-4 text-left">marque</th>
+                <th className="py-2 px-4 text-left">Matricule</th>
+                <th className="py-2 px-4 text-left">Places dispo</th>
               </tr>
             </thead>
             <tbody>
-              {paiements.map((p) => (
-                <tr key={p.id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4">{p.id}</td>
-                  <td className="py-2 px-4">{p.reservationId}</td>
-                  <td className="py-2 px-4">{p.montant} F CFA</td>
-                  <td className="py-2 px-4">{new Date(p.datePaiement).toLocaleDateString()}</td>
-                  <td className="py-2 px-4">{p.statut}</td>
+              {buses.map((b) => (
+                <tr key={b.id} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-4">{b.id}</td>
+                  <td className="py-2 px-4">{b.marque}</td>
+                  <td className="py-2 px-4">{b.matricule}</td>
+                  <td className="py-2 px-4">{b.nombreDePlaces}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </>
-        
+        </>        
       )}
     </div>
   );

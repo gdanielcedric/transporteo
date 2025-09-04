@@ -10,7 +10,7 @@ export default function Header() {
       <div>
         {user ? (
           <div className="flex items-center space-x-4">
-            <span className="text-gray-700">{user.email}</span>
+            <span className="text-gray-700">{user.username}</span>
             <button
               onClick={logout}
               className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600"

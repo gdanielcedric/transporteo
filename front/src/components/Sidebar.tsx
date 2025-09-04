@@ -3,10 +3,12 @@ import { NavLink } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Dashboard' },
-  { to: '/voyages', label: 'Voyages' },
+  { to: '/bus', label: 'Bus' },
+  { to: '/chauffeurs', label: 'Chauffeurs' },
   { to: '/lignes', label: 'Lignes' },
-  { to: '/reservations', label: 'Réservations' },
   { to: '/paiements', label: 'Paiements' },
+  { to: '/reservations', label: 'Réservations' },
+  { to: '/voyages', label: 'Voyages' },
 ];
 
 export default function Sidebar() {
